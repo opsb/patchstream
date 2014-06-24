@@ -43,4 +43,18 @@ describe Patchstream do
 			] 
 		end
 	end	
+
+	context "when a record is destroyed" do
+		before do
+			@product = Product.create name: "Bike", price: 20, id: "3b01d506-8e5b-4ae4-8860-4f2d54106ff1"
+			output.clear
+			@product.destroy
+		end
+
+		it "should generate a patch" do
+			output.should == [
+				{:op=>:remove, :path=>"/products/3b01d506-8e5b-4ae4-8860-4f2d54106ff1"},
+			]
+		end
+	end
 end

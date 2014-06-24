@@ -6,6 +6,7 @@ module Patchstream
 	included do
 		around_create PatchStreamCallbacks.new
 		around_update PatchStreamCallbacks.new
+		around_destroy PatchStreamCallbacks.new
 	end
 
 	class PatchStreamCallbacks
@@ -15,6 +16,10 @@ module Patchstream
 
 		def around_update(record, &block)
 			record.class.patch_streams.emit_update(record, &block)
+		end
+
+		def around_destroy(record, &block)
+			record.class.patch_streams.emit_destroy(record, &block)
 		end
 	end
 
@@ -34,6 +39,10 @@ module Patchstream
 
 			def emit_update(record, &block)
 				emit_all(build_update_patches(record), &block)
+			end
+
+			def emit_destroy(record, &block)
+				emit(build_destroy_patch(record), &block)
 			end
 
 			private
@@ -57,7 +66,14 @@ module Patchstream
 					}
 					changes
 				end
-			end				
+			end	
+
+			def build_destroy_patch(record)
+				{
+					:op => :remove, 
+					:path => "/#{record.class.name.tableize}/#{record.id}"
+				}
+			end
 
 			def streams
 				@streams ||= []
