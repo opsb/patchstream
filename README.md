@@ -19,6 +19,9 @@ Or install it yourself as:
 
 ## Usage
 
+
+### Standard
+
     class Product < ActiveRecord::Base
         include Patchstream
     end
@@ -49,6 +52,43 @@ Or install it yourself as:
 	stream == [
 		{op: "remove", path: "/products/1/name"}
 	]
+
+### With a stream policy class
+
+	class StreamPolicy < Struct.new(:user)
+	    def permits?(operation, record) # operation is one of :create/:update/:destroy
+	    	user.has_access_to?(record)
+	    end
+	end
+
+	stream1 = []
+	Product.patch_streams.add(stream1, StreamPolicy.new(user1))
+
+	stream2 = []
+	Product.patch_streams.add(stream2, StreamPolicy.new(user2))
+
+	product = Product.create name: "Bike", price: 20, permitted_users: [user1]
+
+	stream1.length == 0
+	stream2.length == 1
+
+### With a stream policy block
+
+	stream1 = []
+	Product.patch_streams.add(stream1) do |operation|
+		user1.has_access_to?(record)
+	end
+
+	stream2 = []
+	Product.patch_streams.add(stream2) do |operation|
+		user2.has_access_to?(record)
+	end
+
+	product = Product.create name: "Bike", price: 20, permitted_users: [user1]
+
+	stream1.length == 1
+	stream2.length == 0
+
 
 ## Contributing
 
