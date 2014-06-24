@@ -15,9 +15,11 @@ ActiveRecord::Schema.define(version: 20140624014830) do
 
   create_table "products", force: true do |t|
     t.string   "name"
-    t.decimal  "price",      precision: 8, scale: 2
+    t.float    "price"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
+
+  add_index "products", ["id"], name: "sqlite_autoindex_products_1", unique: true
 
 end

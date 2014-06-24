@@ -1,10 +1,11 @@
 class CreateProducts < ActiveRecord::Migration
-  def change
-    create_table :products do |t|
-      t.string :name
-      t.decimal :price, precision: 8, scale: 2
+	def change
+		create_table :products, id: false do |t|
+			t.uuid :id, primary_key: true
+			t.string :name
+			t.float :price
 
-      t.timestamps
-    end
-  end
+			t.timestamps
+		end
+	end
 end
