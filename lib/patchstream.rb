@@ -28,24 +28,51 @@ module Patchstream
 			@patch_streams ||= PatchStreams.new
 		end
 
+		class Stream < Struct.new(:stream, :policy)
+			def policy_permits?(operation, record)
+				return true unless policy
+				policy.permits?(operation, record)
+			end
+		end
+
 		class PatchStreams
-			def add(stream)
-				streams << stream
+			def add(stream, stream_policy=nil)
+				streams << Stream.new(stream, stream_policy)
 			end
 
-			def emit_create(record, &block)
-				emit(build_create_patch(record), &block)
+			def emit_create(record)
+				patch = build_create_patch(record)
+				yield
+				streams.each do |stream|
+					if stream.policy_permits?(:create, record)
+						stream.stream << patch
+					end
+				end
 			end
 
-			def emit_update(record, &block)
-				emit_all(build_update_patches(record), &block)
+			def emit_update(record)
+				patches = build_update_patches(record)
+				yield
+				streams.each do |stream|
+					if stream.policy_permits?(:update, record)
+						patches.each do |patch|
+							stream.stream << patch
+						end
+					end
+				end
+			end		
+
+			def emit_destroy(record)
+				patch = build_destroy_patch(record)
+				yield
+				streams.each do |stream|
+					if stream.policy_permits?(:destroy, record)
+						stream.stream << patch
+					end
+				end
 			end
 
-			def emit_destroy(record, &block)
-				emit(build_destroy_patch(record), &block)
-			end
-
-			private
+			private			
 			def build_create_patch(record)
 				{
 					:op => :add, 
@@ -77,15 +104,6 @@ module Patchstream
 
 			def streams
 				@streams ||= []
-			end
-
-			def emit(patch)
-				yield if block_given?
-				@streams.each{ |s| s << patch}
-			end
-
-			def emit_all(patches)
-				patches.each{ |patch| emit(patch) }
 			end
 		end
 	end
