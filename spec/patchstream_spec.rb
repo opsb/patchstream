@@ -63,7 +63,7 @@ describe Patchstream do
 		end
 	end
 
-	context "with a stream policy" do
+	context "with a stream policy class" do
 		class StreamPolicy
 			def permits?(operation, record)
 				record.price < 20
@@ -84,6 +84,34 @@ describe Patchstream do
 			end
 		end	
 
+		context "when a record is created that is permitted" do
+			before do
+				@product = Product.create name: "Bike", price: 10, id: "3b01d506-8e5b-4ae4-8860-4f2d54106ff1"
+			end
+
+			it "should not generate a patch" do
+				output.should_not be_empty
+			end
+		end	
+	end
+
+	context "with a stream policy block" do
+		before do
+			Product.patch_streams.add(output) do |operation, record|
+				record.price < 20
+			end
+		end
+
+		context "when a record is created that isn't permitted" do
+			before do
+				@product = Product.create name: "Bike", price: 30, id: "3b01d506-8e5b-4ae4-8860-4f2d54106ff1"
+			end
+
+			it "should not generate a patch" do
+				output.should be_empty
+			end
+		end		
+		
 		context "when a record is created that is permitted" do
 			before do
 				@product = Product.create name: "Bike", price: 10, id: "3b01d506-8e5b-4ae4-8860-4f2d54106ff1"

@@ -35,8 +35,15 @@ module Patchstream
 			end
 		end
 
+		class StreamPolicyWrapper < Struct.new(:callback)
+			def policy_permits?(operation, record)
+				callback.call(operation, record)
+			end
+		end
+
 		class PatchStreams
-			def add(stream, stream_policy=nil)
+			def add(stream, stream_policy=nil, &block)
+				policy = stream_policy || block && StreamPolicyWrapper.new(&block)
 				streams << Stream.new(stream, stream_policy)
 			end
 
