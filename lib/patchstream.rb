@@ -4,31 +4,73 @@ module Patchstream
 	extend ActiveSupport::Concern
 
 	included do
-		before_create :stream_create_patch
+		around_create PatchStreamCallbacks.new
+		around_update PatchStreamCallbacks.new
 	end
 
-	def stream_create_patch
-		patch = build_add_patch
-		self.class.streams.each{ |s| s << patch }
-	end
+	class PatchStreamCallbacks
+		def around_create(record, &block)
+			record.class.patch_streams.emit_create(record, &block)
+		end
 
-	def build_add_patch
-		{
-			:op => :add, 
-			:path => "/#{self.class.name.tableize}/#{id}", 
-			:value => changes.inject({}) do |additions, (key, (_, new_value))|
-				additions[key] = new_value.as_json
-				additions
-			end
-		}
+		def around_update(record, &block)
+			record.class.patch_streams.emit_update(record, &block)
+		end
 	end
 
 	module ClassMethods
-		attr_reader :streams
+		def patch_streams
+			@patch_streams ||= PatchStreams.new
+		end
 
-		def add_patch_stream(stream)
-			@streams ||= []
-			@streams << stream
+		class PatchStreams
+			def add(stream)
+				streams << stream
+			end
+
+			def emit_create(record, &block)
+				emit(build_create_patch(record), &block)
+			end
+
+			def emit_update(record, &block)
+				emit_all(build_update_patches(record), &block)
+			end
+
+			private
+			def build_create_patch(record)
+				{
+					:op => :add, 
+					:path => "/#{record.class.name.tableize}/#{record.id}", 
+					:value => record.changes.inject({}) do |additions, (key, (_, new_value))|
+						additions[key] = new_value.as_json
+						additions
+					end
+				}
+			end
+
+			def build_update_patches(record)
+				record.changes.inject([]) do |changes, (key, (_, new_value))|
+					changes << {
+						:op => :replace,
+						:path => "/#{record.class.name.tableize}/#{record.id}/#{key}",
+						:value => new_value
+					}
+					changes
+				end
+			end				
+
+			def streams
+				@streams ||= []
+			end
+
+			def emit(patch)
+				yield if block_given?
+				@streams.each{ |s| s << patch}
+			end
+
+			def emit_all(patches)
+				patches.each{ |patch| emit(patch) }
+			end
 		end
 	end
 end

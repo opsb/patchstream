@@ -2,13 +2,15 @@ require 'spec_helper'
 
 describe Patchstream do
 	let(:now){ Time.at(1403579955) }
-	before{ Timecop.freeze(now) }
+	let(:output){ [] }
+
+	before do 
+		Timecop.freeze(now)
+		Product.patch_streams.add(output)
+	end
 
 	context "when a record is created" do
-		let(:output){ [] }
-
 		before do
-			Product.add_patch_stream(output)
 			@product = Product.create name: "Bike", price: 20, id: "3b01d506-8e5b-4ae4-8860-4f2d54106ff1"
 		end
 
@@ -26,4 +28,19 @@ describe Patchstream do
 			}
 		end
 	end
+
+	context "when a record is updated" do
+		before do
+			@product = Product.create name: "Bike", price: 20, id: "3b01d506-8e5b-4ae4-8860-4f2d54106ff1"
+			output.clear
+			@product.update_attributes name: "Bicycle", price: 30
+		end
+
+		it "should generate a patch" do
+			output.should == [
+				{:op=>:replace, :path=>"/products/3b01d506-8e5b-4ae4-8860-4f2d54106ff1/name", :value=>"Bicycle"},
+				{:op=>:replace, :path=>"/products/3b01d506-8e5b-4ae4-8860-4f2d54106ff1/price", :value=>30.0}
+			] 
+		end
+	end	
 end
