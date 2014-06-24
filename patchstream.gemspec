@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Patchstream::VERSION
   spec.authors       = ["opsb"]
   spec.email         = ["oliver@opsb.co.uk"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
+  spec.description   = %q{Emits json patches when active records are updated}
+  spec.summary       = %q{Emits json patches when active records are updated}
   spec.homepage      = ""
   spec.license       = "MIT"
 
