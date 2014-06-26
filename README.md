@@ -50,7 +50,7 @@ Or install it yourself as:
 
     product.destroy
 	stream == [
-		{op: "remove", path: "/products/1/name"}
+		{op: "remove", path: "/products/1"}
 	]
 
 ### With a stream policy class
